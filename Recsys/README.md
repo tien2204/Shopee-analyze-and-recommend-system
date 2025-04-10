@@ -212,23 +212,3 @@ Hệ thống cung cấp các API sau:
 ### API người dùng
 
 - `GET /api/user/behavior/<user_id>`: Lấy phân tích hành vi người dùng
-
-## Xử lý lỗi
-
-Nếu gặp lỗi, hãy kiểm tra các bước sau:
-
-1. Đảm bảo tất cả các thư viện cần thiết đã được cài đặt
-2. Kiểm tra các file log để xem thông tin lỗi chi tiết
-3. Đảm bảo các thành phần của hệ thống đã được khởi động đúng cách
-4. Kiểm tra kết nối mạng nếu thu thập dữ liệu từ Shopee
-
-## Liên hệ
-
-Nếu có bất kỳ câu hỏi hoặc góp ý nào, vui lòng liên hệ:
-
-- Email: your.email@example.com
-- GitHub: https://github.com/yourusername/shopee_recommendation_system
-
-## Giấy phép
-
-Hệ thống này được phân phối dưới giấy phép MIT. Xem file LICENSE để biết thêm chi tiết.
