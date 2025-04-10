@@ -1,0 +1,239 @@
+{% extends 'base.html' %}
+
+{% block title %}Sản phẩm - Hệ thống đánh giá và gợi ý sản phẩm Shopee{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="mb-4">Danh sách sản phẩm</h1>
+        
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="card-title mb-0">Bộ lọc</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="category-filter" class="form-label">Danh mục</label>
+                                <select class="form-select" id="category-filter">
+                                    <option value="">Tất cả</option>
+                                    <option value="Điện thoại & Phụ kiện">Điện thoại & Phụ kiện</option>
+                                    <option value="Máy tính & Laptop">Máy tính & Laptop</option>
+                                    <option value="Thiết bị âm thanh">Thiết bị âm thanh</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="price-filter" class="form-label">Giá</label>
+                                <select class="form-select" id="price-filter">
+                                    <option value="">Tất cả</option>
+                                    <option value="0-5000000">Dưới 5 triệu</option>
+                                    <option value="5000000-15000000">5 - 15 triệu</option>
+                                    <option value="15000000-30000000">15 - 30 triệu</option>
+                                    <option value="30000000-100000000">Trên 30 triệu</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="rating-filter" class="form-label">Đánh giá</label>
+                                <select class="form-select" id="rating-filter">
+                                    <option value="">Tất cả</option>
+                                    <option value="4.5">Từ 4.5 sao</option>
+                                    <option value="4">Từ 4 sao</option>
+                                    <option value="3.5">Từ 3.5 sao</option>
+                                    <option value="3">Từ 3 sao</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label for="sort-by" class="form-label">Sắp xếp theo</label>
+                                <select class="form-select" id="sort-by">
+                                    <option value="popularity">Phổ biến</option>
+                                    <option value="price-asc">Giá tăng dần</option>
+                                    <option value="price-desc">Giá giảm dần</option>
+                                    <option value="rating">Đánh giá</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button id="apply-filter" class="btn btn-danger">Áp dụng</button>
+                                <button id="reset-filter" class="btn btn-outline-secondary">Đặt lại</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row" id="products-container">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <nav aria-label="Phân trang">
+                    <ul class="pagination justify-content-center" id="pagination">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Trước</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Sau</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lấy danh sách sản phẩm
+    function loadProducts() {
+        fetch('/api/products/top?limit=20')
+            .then(response => response.json())
+            .then(data => {
+                const productsContainer = document.getElementById('products-container');
+                productsContainer.innerHTML = '';
+                
+                if (data.products.length === 0) {
+                    productsContainer.innerHTML = '<div class="col-12 text-center">Không tìm thấy sản phẩm nào</div>';
+                    return;
+                }
+                
+                // Áp dụng bộ lọc
+                let filteredProducts = data.products;
+                
+                const categoryFilter = document.getElementById('category-filter').value;
+                if (categoryFilter) {
+                    filteredProducts = filteredProducts.filter(product => product.category === categoryFilter);
+                }
+                
+                const priceFilter = document.getElementById('price-filter').value;
+                if (priceFilter) {
+                    const [minPrice, maxPrice] = priceFilter.split('-').map(Number);
+                    filteredProducts = filteredProducts.filter(product => {
+                        const price = parseFloat(product.price_numeric || 0);
+                        if (maxPrice) {
+                            return price >= minPrice && price <= maxPrice;
+                        } else {
+                            return price >= minPrice;
+                        }
+                    });
+                }
+                
+                const ratingFilter = document.getElementById('rating-filter').value;
+                if (ratingFilter) {
+                    const minRating = parseFloat(ratingFilter);
+                    filteredProducts = filteredProducts.filter(product => product.rating >= minRating);
+                }
+                
+                // Sắp xếp
+                const sortBy = document.getElementById('sort-by').value;
+                if (sortBy === 'price-asc') {
+                    filteredProducts.sort((a, b) => (a.price_numeric || 0) - (b.price_numeric || 0));
+                } else if (sortBy === 'price-desc') {
+                    filteredProducts.sort((a, b) => (b.price_numeric || 0) - (a.price_numeric || 0));
+                } else if (sortBy === 'rating') {
+                    filteredProducts.sort((a, b) => b.rating - a.rating);
+                } else {
+                    // Mặc định sắp xếp theo popularity_score
+                    filteredProducts.sort((a, b) => b.popularity_score - a.popularity_score);
+                }
+                
+                // Hiển thị sản phẩm
+                filteredProducts.forEach(product => {
+                    const productCard = document.createElement('div');
+                    productCard.className = 'col-md-3 mb-4';
+                    
+                    const imageUrl = product.image_url || 'https://via.placeholder.com/150';
+                    
+                    productCard.innerHTML = `
+                        <div class="card h-100">
+                            <img src="${imageUrl}" class="card-img-top" alt="${product.name}">
+                            <div class="card-body">
+                                <h5 class="card-title">${product.name}</h5>
+                                <p class="card-text text-danger fw-bold">${product.price}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="text-warning">
+                                            ${'★'.repeat(Math.round(product.rating))}${'☆'.repeat(5-Math.round(product.rating))}
+                                        </span>
+                                        <span class="small text-muted">(${product.rating})</span>
+                                    </div>
+                                    <span class="small text-muted">Đã bán: ${product.sold}</span>
+                                </div>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <a href="/products/${product.product_id}" class="btn btn-sm btn-outline-danger w-100">Xem chi tiết</a>
+                            </div>
+                        </div>
+                    `;
+                    
+                    productsContainer.appendChild(productCard);
+                });
+                
+                // Cập nhật phân trang
+                updatePagination(filteredProducts.length);
+            })
+            .catch(error => {
+                console.error('Error fetching products:', error);
+                document.getElementById('products-container').innerHTML = '<div class="col-12 text-center text-danger">Không thể tải dữ liệu sản phẩm</div>';
+            });
+    }
+    
+    // Cập nhật phân trang
+    function updatePagination(totalItems) {
+        const itemsPerPage = 12;
+        const totalPages = Math.ceil(totalItems / itemsPerPage);
+        
+        const pagination = document.getElementById('pagination');
+        pagination.innerHTML = '';
+        
+        // Nút Trước
+        const prevButton = document.createElement('li');
+        prevButton.className = 'page-item disabled';
+        prevButton.innerHTML = '<a class="page-link" href="#" tabindex="-1" aria-disabled="true">Trước</a>';
+        pagination.appendChild(prevButton);
+        
+        // Các trang
+        for (let i = 1; i <= Math.min(totalPages, 5); i++) {
+            const pageItem = document.createElement('li');
+            pageItem.className = i === 1 ? 'page-item active' : 'page-item';
+            pageItem.innerHTML = `<a class="page-link" href="#">${i}</a>`;
+            pagination.appendChild(pageItem);
+        }
+        
+        // Nút Sau
+        const nextButton = document.createElement('li');
+        nextButton.className = totalPages > 1 ? 'page-item' : 'page-item disabled';
+        nextButton.innerHTML = '<a class="page-link" href="#">Sau</a>';
+        pagination.appendChild(nextButton);
+    }
+    
+    // Xử lý sự kiện áp dụng bộ lọc
+    document.getElementById('apply-filter').addEventListener('click', loadProducts);
+    
+    // Xử lý sự kiện đặt lại bộ lọc
+    document.getElementById('reset-filter').addEventListener('click', function() {
+        document.getElementById('category-filter').value = '';
+        document.getElementById('price-filter').value = '';
+        document.getElementById('rating-filter').value = '';
+        document.getElementById('sort-by').value = 'popularity';
+        loadProducts();
+    });
+    
+    // Tải sản phẩm khi trang được tải
+    loadProducts();
+});
+</script>
+{% endblock %}

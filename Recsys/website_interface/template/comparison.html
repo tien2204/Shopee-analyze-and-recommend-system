@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}So sánh thuật toán - Hệ thống đánh giá và gợi ý sản phẩm Shopee{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Trang chủ</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('recommendations_page', user_id=user_id) }}">Gợi ý sản phẩm</a></li>
+                <li class="breadcrumb-item active" aria-current="page">So sánh thuật toán</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="p-4 bg-light rounded-3">
+            <div class="container-fluid">
+                <h1 class="display-5 fw-bold text-danger">So sánh thuật toán gợi ý cho {{ user_id }}</h1>
+                <p class="fs-5">Phân tích hiệu suất của các thuật toán gợi ý khác nhau để tìm ra phương pháp tốt nhất cho bạn.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Tổng quan hiệu suất thuật toán</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Collaborative Filtering</h5>
+                                <div class="display-1 text-primary" id="cf-score">...</div>
+                                <p class="card-text">Dựa trên hành vi của người dùng tương tự</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Matrix Factorization</h5>
+                                <div class="display-1 text-success" id="mf-score">...</div>
+                                <p class="card-text">Phân tích ma trận tương tác người dùng-sản phẩm</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Hybrid Methods</h5>
+                                <div class="display-1 text-danger" id="hybrid-score">...</div>
+                                <p class="card-text">Kết hợp nhiều phương pháp để tối ưu kết quả</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Biểu đồ so sánh</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="algorithm-comparison-chart" height="300"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="algorithm-radar-chart" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">So sánh chi tiết theo sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="products-comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Collaborative Filtering</th>
+                                <th>Matrix Factorization</th>
+                                <th>Hybrid Methods</th>
+                                <th>Thuật toán tốt nhất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border text-danger" role="status">
+                                        <span class="visually-hidden">Đang tải...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Phân tích thuật toán</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="card-title mb-0">Collaborative Filtering</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Ưu điểm:</h6>
+                                <ul>
+                                    <li>Hiệu quả khi có nhiều dữ liệu tương tác người dùng</li>
+                                    <li>Không cần thông tin chi tiết về sản phẩm</li>
+                                    <li>Có thể phát hiện các mẫu hình phức tạp</li>
+                                </ul>
+                                <h6>Nhược điểm:</h6>
+                                <ul>
+                                    <li>Vấn đề "cold start" với người dùng/sản phẩm mới</li>
+                                    <li>Cần lượng lớn dữ liệu để hoạt động tốt</li>
+                                    <li>Khó giải thích kết quả gợi ý</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="card-title mb-0">Matrix Factorization</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Ưu điểm:</h6>
+                                <ul>
+                                    <li>Hiệu quả với dữ liệu thưa thớt</li>
+                                    <li>Phát hiện các đặc trưng ẩn</li>
+                                    <li>Khả năng mở rộng tốt</li>
+                                </ul>
+                                <h6>Nhược điểm:</h6>
+                                <ul>
+                                    <li>Có thể bị overfitting</li>
+                                    <li>Khó điều chỉnh các tham số</li>
+                                    <li>Không tận dụng được thông tin ngữ cảnh</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="card-title mb-0">Hybrid Methods</h5>
+                            </div>
+                            <div class="card-body">
+                                <h6>Ưu điểm:</h6>
+                                <ul>
+                                    <li>Kết hợp ưu điểm của nhiều phương pháp</li>
+                                    <li>Giảm thiểu vấn đề "cold start"</li>
+                                    <li>Độ chính xác cao hơn</li>
+                                </ul>
+                                <h6>Nhược điểm:</h6>
+                                <ul>
+                                    <li>Phức tạp hơn trong triển khai</li>
+                                    <li>Tốn nhiều tài nguyên tính toán</li>
+                                    <li>Khó điều chỉnh trọng số giữa các phương pháp</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userId = '{{ user_id }}';
+    
+    // Lấy dữ liệu so sánh thuật toán
+    fetch(`/api/algorithms/comparison/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            // Cập nhật điểm số tổng quan
+            document.getElementById('cf-score').textContent = data.cf.toFixed(2);
+            document.getElementById('mf-score').textContent = data.mf.toFixed(2);
+            document.getElementById('hybrid-score').textContent = data.hybrid.toFixed(2);
+            
+            // Biểu đồ so sánh
+            const comparisonCtx = document.getElementById('algorithm-comparison-chart').getContext('2d');
+            new Chart(comparisonCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Collaborative Filtering', 'Matrix Factorization', 'Hybrid Methods'],
+                    datasets: [{
+                        label: 'Điểm hiệu suất',
+                        data: [data.cf, data.mf, data.hybrid],
+                        backgroundColor: [
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(255, 99, 132, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgb(54, 162, 235)',
+                            'rgb(75, 192, 192)',
+                            'rgb(255, 99, 132)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1
+                        }
+                    }
+                }
+            });
+            
+            // Biểu đồ radar
+            const radarCtx = document.getElementById('algorithm-radar-chart').getContext('2d');
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['Độ chính xác', 'Độ phủ', 'Thời gian phản hồi', 'Khả năng mở rộng', 'Khả năng giải thích'],
+                    datasets: [
+                        {
+                            label: 'Collaborative Filtering',
+                            data: [0.85, 0.78, 0.90, 0.75, 0.60],
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgb(54, 162, 235)',
+                            pointBackgroundColor: 'rgb(54, 162, 235)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(54, 162, 235)'
+                        },
+                        {
+                            label: 'Matrix Factorization',
+                            data: [0.78, 0.82, 0.85, 0.90, 0.65],
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgb(75, 192, 192)',
+                            pointBackgroundColor: 'rgb(75, 192, 192)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(75, 192, 192)'
+                        },
+                        {
+                            label: 'Hybrid Methods',
+                            data: [0.92, 0.88, 0.75, 0.70, 0.80],
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            pointBackgroundColor: 'rgb(255, 99, 132)',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgb(255, 99, 132)'
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 1
+                        }
+                    }
+                }
+            });
+            
+            // Cập nhật bảng so sánh sản phẩm
+            const tableBody = document.querySelector('#products-comparison-table tbody');
+            tableBody.innerHTML = '';
+            
+            data.products.forEach(product => {
+                const row = document.createElement('tr');
+                
+                // Xác định thuật toán tốt nhất
+                let bestAlgorithm = 'hybrid';
+                let bestScore = product.hybrid_score;
+                
+                if (product.cf_score > bestScore) {
+                    bestAlgorithm = 'cf';
+                    bestScore = product.cf_score;
+                }
+                
+                if (product.mf_score > bestScore) {
+                    bestAlgorithm = 'mf';
+                    bestScore = product.mf_score;
+                }
+                
+                // Tạo các badge cho thuật toán tốt nhất
+                const cfBadge = bestAlgorithm === 'cf' ? '<span class="badge bg-success">Tốt nhất</span>' : '';
+                const mfBadge = bestAlgorithm === 'mf' ? '<span class="badge bg-success">Tốt nhất</span>' : '';
+                const hybridBadge = bestAlgorithm === 'hybrid' ? '<span class="badge bg-success">Tốt nhất</span>' : '';
+                
+                // Tạo tên thuật toán tốt nhất
+                const bestAlgorithmName = bestAlgorithm === 'cf' ? 'Collaborative Filtering' : 
+                                         (bestAlgorithm === 'mf' ? 'Matrix Factorization' : 'Hybrid Methods');
+                
+                row.innerHTML = `
+                    <td>${product.name}</td>
+                    <td>${product.cf_score.toFixed(2)} ${cfBadge}</td>
+                    <td>${product.mf_score.toFixed(2)} ${mfBadge}</td>
+                    <td>${product.hybrid_score.toFixed(2)} ${hybridBadge}</td>
+                    <td>${bestAlgorithmName}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching algorithm comparison:', error);
+            document.getElementById('cf-score').textContent = 'N/A';
+            document.getElementById('mf-score').textContent = 'N/A';
+            document.getElementById('hybrid-score').textContent = 'N/A';
+            
+            const tableBody = document.querySelector('#products-comparison-table tbody');
+            tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Không thể tải dữ liệu so sánh thuật toán</td></tr>';
+        });
+});
+</script>
+{% endblock %}

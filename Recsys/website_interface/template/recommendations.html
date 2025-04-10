@@ -1,0 +1,257 @@
+{% extends 'base.html' %}
+
+{% block title %}Gợi ý sản phẩm - Hệ thống đánh giá và gợi ý sản phẩm Shopee{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Gợi ý sản phẩm</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="p-4 bg-light rounded-3">
+            <div class="container-fluid">
+                <h1 class="display-5 fw-bold text-danger">Gợi ý sản phẩm cho {{ user_id }}</h1>
+                <p class="fs-5">Dựa trên hành vi mua sắm và lịch sử tương tác của bạn, chúng tôi đề xuất những sản phẩm phù hợp nhất với sở thích của bạn.</p>
+                <a href="{{ url_for('comparison_page', user_id=user_id) }}" class="btn btn-outline-danger">
+                    <i class="bi bi-bar-chart-line"></i> So sánh thuật toán
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Sản phẩm được gợi ý</h5>
+            </div>
+            <div class="card-body">
+                <div class="row" id="recommendations-container">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Phân tích hành vi người dùng</h5>
+            </div>
+            <div class="card-body">
+                <div id="user-behavior-container">
+                    <div class="text-center">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userId = '{{ user_id }}';
+    
+    // Lấy gợi ý sản phẩm
+    fetch(`/api/recommendations/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            const recommendationsContainer = document.getElementById('recommendations-container');
+            recommendationsContainer.innerHTML = '';
+            
+            if (!data.recommendations || data.recommendations.length === 0) {
+                recommendationsContainer.innerHTML = '<div class="col-12 text-center">Không có gợi ý sản phẩm nào</div>';
+                return;
+            }
+            
+            data.recommendations.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'col-md-4 mb-4';
+                
+                const imageUrl = product.image_url || 'https://via.placeholder.com/150';
+                
+                productCard.innerHTML = `
+                    <div class="card h-100">
+                        <div class="card-header bg-light">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-danger">Điểm gợi ý: ${product.recommendation_score.toFixed(1)}</span>
+                                <span class="badge bg-secondary">Thuật toán: ${product.algorithm || 'hybrid'}</span>
+                            </div>
+                        </div>
+                        <img src="${imageUrl}" class="card-img-top" alt="${product.name}">
+                        <div class="card-body">
+                            <h5 class="card-title">${product.name}</h5>
+                            <p class="card-text text-danger fw-bold">${product.price}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-warning">
+                                        ${'★'.repeat(Math.round(product.rating))}${'☆'.repeat(5-Math.round(product.rating))}
+                                    </span>
+                                    <span class="small text-muted">(${product.rating})</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="/products/${product.product_id}" class="btn btn-sm btn-outline-danger w-100">Xem chi tiết</a>
+                        </div>
+                    </div>
+                `;
+                
+                recommendationsContainer.appendChild(productCard);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching recommendations:', error);
+            document.getElementById('recommendations-container').innerHTML = '<div class="col-12 text-center text-danger">Không thể tải gợi ý sản phẩm</div>';
+        });
+    
+    // Lấy phân tích hành vi người dùng
+    fetch(`/api/user/behavior/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            const userBehaviorContainer = document.getElementById('user-behavior-container');
+            userBehaviorContainer.innerHTML = '';
+            
+            if (!data || !data.products || data.products.length === 0) {
+                userBehaviorContainer.innerHTML = '<div class="text-center">Không có dữ liệu hành vi người dùng</div>';
+                return;
+            }
+            
+            // Tạo tổng quan hành vi
+            const behaviorOverview = document.createElement('div');
+            behaviorOverview.className = 'row mb-4';
+            behaviorOverview.innerHTML = `
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Tổng số tương tác</h5>
+                            <h2 class="text-danger">${data.total_actions}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Điểm tương tác trung bình</h5>
+                            <h2 class="text-danger">${data.avg_interaction.toFixed(1)}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Số sản phẩm đã tương tác</h5>
+                            <h2 class="text-danger">${data.products.length}</h2>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            userBehaviorContainer.appendChild(behaviorOverview);
+            
+            // Tạo biểu đồ tương tác
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'row mb-4';
+            chartContainer.innerHTML = `
+                <div class="col-md-12">
+                    <h5>Biểu đồ tương tác sản phẩm</h5>
+                    <canvas id="interaction-chart" height="200"></canvas>
+                </div>
+            `;
+            
+            userBehaviorContainer.appendChild(chartContainer);
+            
+            // Tạo bảng chi tiết hành vi
+            const behaviorTable = document.createElement('div');
+            behaviorTable.className = 'row';
+            behaviorTable.innerHTML = `
+                <div class="col-md-12">
+                    <h5>Chi tiết tương tác</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th>Tần suất tương tác</th>
+                                    <th>Điểm tương tác</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.products.map(product => `
+                                    <tr>
+                                        <td>${product.name}</td>
+                                        <td>${product.action_frequency}</td>
+                                        <td>${product.interaction_score.toFixed(1)}</td>
+                                        <td>
+                                            <a href="/products/${product.product_id}" class="btn btn-sm btn-outline-danger">Xem sản phẩm</a>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            userBehaviorContainer.appendChild(behaviorTable);
+            
+            // Vẽ biểu đồ
+            const ctx = document.getElementById('interaction-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.products.map(product => product.name),
+                    datasets: [
+                        {
+                            label: 'Tần suất tương tác',
+                            data: data.products.map(product => product.action_frequency),
+                            backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Điểm tương tác',
+                            data: data.products.map(product => product.interaction_score),
+                            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching user behavior:', error);
+            document.getElementById('user-behavior-container').innerHTML = '<div class="text-center text-danger">Không thể tải dữ liệu hành vi người dùng</div>';
+        });
+});
+</script>
+{% endblock %}

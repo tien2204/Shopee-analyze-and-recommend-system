@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Trang chủ - Hệ thống đánh giá và gợi ý sản phẩm Shopee{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="p-5 mb-4 bg-light rounded-3 text-center">
+            <div class="container-fluid py-5">
+                <h1 class="display-5 fw-bold text-danger">Hệ thống đánh giá và gợi ý sản phẩm Shopee</h1>
+                <p class="fs-4">Khám phá sản phẩm phù hợp với bạn dựa trên công nghệ AI tiên tiến</p>
+                <a href="{{ url_for('recommendations_page', user_id='user123') }}" class="btn btn-danger btn-lg">
+                    Xem gợi ý cho bạn
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2 class="mb-4">Sản phẩm nổi bật</h2>
+        <div class="row" id="top-products">
+            <div class="col-12 text-center">
+                <div class="spinner-border text-danger" role="status">
+                    <span class="visually-hidden">Đang tải...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Thuật toán gợi ý</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="bi bi-people-fill fs-1 text-primary"></i>
+                            <h5 class="mt-2">Collaborative Filtering</h5>
+                            <p class="small">Dựa trên hành vi của người dùng tương tự</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="bi bi-grid-3x3-gap-fill fs-1 text-success"></i>
+                            <h5 class="mt-2">Matrix Factorization</h5>
+                            <p class="small">Phân tích ma trận tương tác người dùng-sản phẩm</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-center mb-3">
+                        <div class="p-3 border rounded">
+                            <i class="bi bi-diagram-3-fill fs-1 text-danger"></i>
+                            <h5 class="mt-2">Hybrid Methods</h5>
+                            <p class="small">Kết hợp nhiều phương pháp để tối ưu kết quả</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('comparison_page', user_id='user123') }}" class="btn btn-outline-danger">So sánh thuật toán</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Danh mục sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <div id="categories-container">
+                    <div class="text-center">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Lấy danh sách sản phẩm hàng đầu
+    fetch('/api/products/top?limit=5')
+        .then(response => response.json())
+        .then(data => {
+            const productsContainer = document.getElementById('top-products');
+            productsContainer.innerHTML = '';
+            
+            data.products.forEach(product => {
+                const productCard = document.createElement('div');
+                productCard.className = 'col-md-4 col-lg-2-4 mb-4';
+                
+                const imageUrl = product.image_url || 'https://via.placeholder.com/150';
+                
+                productCard.innerHTML = `
+                    <div class="card h-100">
+                        <img src="${imageUrl}" class="card-img-top" alt="${product.name}">
+                        <div class="card-body">
+                            <h5 class="card-title">${product.name}</h5>
+                            <p class="card-text text-danger fw-bold">${product.price}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-warning">
+                                        ${'★'.repeat(Math.round(product.rating))}${'☆'.repeat(5-Math.round(product.rating))}
+                                    </span>
+                                    <span class="small text-muted">(${product.rating})</span>
+                                </div>
+                                <span class="small text-muted">Đã bán: ${product.sold}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="/products/${product.product_id}" class="btn btn-sm btn-outline-danger w-100">Xem chi tiết</a>
+                        </div>
+                    </div>
+                `;
+                
+                productsContainer.appendChild(productCard);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching top products:', error);
+            document.getElementById('top-products').innerHTML = '<div class="col-12 text-center text-danger">Không thể tải dữ liệu sản phẩm</div>';
+        });
+    
+    // Lấy danh sách danh mục
+    fetch('/api/categories')
+        .then(response => response.json())
+        .then(data => {
+            const categoriesContainer = document.getElementById('categories-container');
+            categoriesContainer.innerHTML = '';
+            
+            const table = document.createElement('table');
+            table.className = 'table table-hover';
+            
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Danh mục</th>
+                    <th>Số sản phẩm</th>
+                    <th>Giá trung bình</th>
+                    <th>Đánh giá</th>
+                </tr>
+            `;
+            
+            const tbody = document.createElement('tbody');
+            
+            data.categories.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${category.name}</td>
+                    <td>${category.product_count}</td>
+                    <td>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(category.avg_price)}</td>
+                    <td>
+                        <span class="text-warning">
+                            ${'★'.repeat(Math.round(category.avg_rating))}${'☆'.repeat(5-Math.round(category.avg_rating))}
+                        </span>
+                        <span class="small text-muted">(${category.avg_rating.toFixed(1)})</span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            categoriesContainer.appendChild(table);
+        })
+        .catch(error => {
+            console.error('Error fetching categories:', error);
+            document.getElementById('categories-container').innerHTML = '<div class="text-center text-danger">Không thể tải dữ liệu danh mục</div>';
+        });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,400 @@
+{% extends 'base.html' %}
+
+{% block title %}Bảng điều khiển - Hệ thống đánh giá và gợi ý sản phẩm Shopee{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Trang chủ</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Bảng điều khiển</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="p-4 bg-light rounded-3">
+            <div class="container-fluid">
+                <h1 class="display-5 fw-bold text-danger">Bảng điều khiển phân tích</h1>
+                <p class="fs-5">Phân tích dữ liệu sản phẩm, đánh giá và hành vi người dùng trên Shopee.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-box-seam text-danger" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Tổng số sản phẩm</h5>
+                <h2 class="text-danger" id="total-products">...</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-star text-danger" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Đánh giá trung bình</h5>
+                <h2 class="text-danger" id="avg-rating">...</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-people text-danger" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Tổng số người dùng</h5>
+                <h2 class="text-danger" id="total-users">...</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <i class="bi bi-chat-left-text text-danger" style="font-size: 3rem;"></i>
+                <h5 class="card-title mt-3">Tổng số đánh giá</h5>
+                <h2 class="text-danger" id="total-reviews">...</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Phân phối đánh giá sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="ratings-chart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Phân phối giá sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="price-chart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Phân tích danh mục sản phẩm</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="category-chart" height="300"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <div id="categories-table-container">
+                            <div class="text-center">
+                                <div class="spinner-border text-danger" role="status">
+                                    <span class="visually-hidden">Đang tải...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Hiệu suất thuật toán gợi ý</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="algorithm-chart" height="300"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Thuật toán</th>
+                                        <th>Độ chính xác</th>
+                                        <th>Độ phủ</th>
+                                        <th>F1-Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Collaborative Filtering</td>
+                                        <td>0.85</td>
+                                        <td>0.78</td>
+                                        <td>0.81</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Matrix Factorization</td>
+                                        <td>0.78</td>
+                                        <td>0.82</td>
+                                        <td>0.80</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Hybrid Methods</td>
+                                        <td>0.92</td>
+                                        <td>0.88</td>
+                                        <td>0.90</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Dữ liệu mô phỏng
+    const simulatedData = {
+        totalProducts: 5,
+        avgRating: 4.8,
+        totalUsers: 2,
+        totalReviews: 7,
+        ratingDistribution: [0, 0, 1, 1, 5],
+        priceDistribution: {
+            labels: ['<5 triệu', '5-15 triệu', '15-30 triệu', '>30 triệu'],
+            data: [1, 2, 1, 1]
+        },
+        algorithmPerformance: {
+            labels: ['Collaborative Filtering', 'Matrix Factorization', 'Hybrid Methods'],
+            accuracy: [0.85, 0.78, 0.92],
+            recall: [0.78, 0.82, 0.88],
+            f1Score: [0.81, 0.80, 0.90]
+        }
+    };
+    
+    // Cập nhật thông số tổng quan
+    document.getElementById('total-products').textContent = simulatedData.totalProducts;
+    document.getElementById('avg-rating').textContent = simulatedData.avgRating.toFixed(1);
+    document.getElementById('total-users').textContent = simulatedData.totalUsers;
+    document.getElementById('total-reviews').textContent = simulatedData.totalReviews;
+    
+    // Biểu đồ phân phối đánh giá
+    const ratingsCtx = document.getElementById('ratings-chart').getContext('2d');
+    new Chart(ratingsCtx, {
+        type: 'bar',
+        data: {
+            labels: ['1 sao', '2 sao', '3 sao', '4 sao', '5 sao'],
+            datasets: [{
+                label: 'Số lượng đánh giá',
+                data: simulatedData.ratingDistribution,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(255, 159, 64, 0.5)',
+                    'rgba(255, 205, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)',
+                    'rgba(54, 162, 235, 0.5)'
+                ],
+                borderColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(255, 159, 64)',
+                    'rgb(255, 205, 86)',
+                    'rgb(75, 192, 192)',
+                    'rgb(54, 162, 235)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Biểu đồ phân phối giá
+    const priceCtx = document.getElementById('price-chart').getContext('2d');
+    new Chart(priceCtx, {
+        type: 'pie',
+        data: {
+            labels: simulatedData.priceDistribution.labels,
+            datasets: [{
+                label: 'Số lượng sản phẩm',
+                data: simulatedData.priceDistribution.data,
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.5)',
+                    'rgba(54, 162, 235, 0.5)',
+                    'rgba(255, 206, 86, 0.5)',
+                    'rgba(75, 192, 192, 0.5)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)'
+                ],
+                borderWidth: 1
+            }]
+        }
+    });
+    
+    // Lấy danh sách danh mục
+    fetch('/api/categories')
+        .then(response => response.json())
+        .then(data => {
+            const categoriesTableContainer = document.getElementById('categories-table-container');
+            categoriesTableContainer.innerHTML = '';
+            
+            if (!data.categories || data.categories.length === 0) {
+                categoriesTableContainer.innerHTML = '<div class="text-center">Không có dữ liệu danh mục</div>';
+                return;
+            }
+            
+            // Tạo bảng danh mục
+            const table = document.createElement('table');
+            table.className = 'table table-hover';
+            
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Danh mục</th>
+                    <th>Số sản phẩm</th>
+                    <th>Giá trung bình</th>
+                    <th>Đánh giá</th>
+                </tr>
+            `;
+            
+            const tbody = document.createElement('tbody');
+            
+            data.categories.forEach(category => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${category.name}</td>
+                    <td>${category.product_count}</td>
+                    <td>${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(category.avg_price)}</td>
+                    <td>
+                        <span class="text-warning">
+                            ${'★'.repeat(Math.round(category.avg_rating))}${'☆'.repeat(5-Math.round(category.avg_rating))}
+                        </span>
+                        <span class="small text-muted">(${category.avg_rating.toFixed(1)})</span>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            categoriesTableContainer.appendChild(table);
+            
+            // Biểu đồ danh mục
+            const categoryCtx = document.getElementById('category-chart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.categories.map(category => category.name),
+                    datasets: [{
+                        label: 'Số lượng sản phẩm',
+                        data: data.categories.map(category => category.product_count),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(54, 162, 235, 0.5)',
+                            'rgba(255, 206, 86, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching categories:', error);
+            document.getElementById('categories-table-container').innerHTML = '<div class="text-center text-danger">Không thể tải dữ liệu danh mục</div>';
+        });
+    
+    // Biểu đồ hiệu suất thuật toán
+    const algorithmCtx = document.getElementById('algorithm-chart').getContext('2d');
+    new Chart(algorithmCtx, {
+        type: 'radar',
+        data: {
+            labels: ['Độ chính xác', 'Độ phủ', 'F1-Score'],
+            datasets: [
+                {
+                    label: 'Collaborative Filtering',
+                    data: [
+                        simulatedData.algorithmPerformance.accuracy[0],
+                        simulatedData.algorithmPerformance.recall[0],
+                        simulatedData.algorithmPerformance.f1Score[0]
+                    ],
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    pointBackgroundColor: 'rgb(255, 99, 132)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(255, 99, 132)'
+                },
+                {
+                    label: 'Matrix Factorization',
+                    data: [
+                        simulatedData.algorithmPerformance.accuracy[1],
+                        simulatedData.algorithmPerformance.recall[1],
+                        simulatedData.algorithmPerformance.f1Score[1]
+                    ],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    pointBackgroundColor: 'rgb(54, 162, 235)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(54, 162, 235)'
+                },
+                {
+                    label: 'Hybrid Methods',
+                    data: [
+                        simulatedData.algorithmPerformance.accuracy[2],
+                        simulatedData.algorithmPerformance.recall[2],
+                        simulatedData.algorithmPerformance.f1Score[2]
+                    ],
+                    backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                    borderColor: 'rgb(255, 206, 86)',
+                    pointBackgroundColor: 'rgb(255, 206, 86)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgb(255, 206, 86)'
+                }
+            ]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 1
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
