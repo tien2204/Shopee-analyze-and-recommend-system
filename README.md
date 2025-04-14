@@ -221,19 +221,24 @@ pip install flask flask-cors requests pandas numpy scikit-learn
 ```
 8. Kết nối các thành phần
 Đảm bảo các thành phần kết nối được với nhau(Nên dùng Docker)
+
 8.1. Kết nối Kafka với Spark Streaming
    file kafka_to_spark.py
+   
 8.2. Kết nối Spark với Elasticsearch
    file spark_to_elasticsearch.py
+   
 8.3. Triển khai thuật toán gợi ý với Spark MLlib
    file recommendation_engine.py
+   
 8.4. Xây dựng giao diện web với Flask
    file app.py
-9. Tạo script khởi động hệ thống
+   
+10. Tạo script khởi động hệ thống
     file start_system.sh
-10. Tạo script thu thập dữ liệu
+11. Tạo script thu thập dữ liệu
     file collect_data.py
-11. Tạo script phân tích dữ liệu
+12. Tạo script phân tích dữ liệu
     file analyze_data.py
-12. Tạo script đánh giá thuật toán gợi ý
+13. Tạo script đánh giá thuật toán gợi ý
     file evaluate_recommendations.py
