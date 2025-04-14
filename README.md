@@ -54,162 +54,186 @@ shopee_system/
 ```
 
 ## Yêu cầu hệ thống
-
+Lưu ý nên tải các bản dưới phù hợp với JDK 8
 - Python 3.6+
-- Các thư viện Python: Flask, pandas, numpy, scikit-learn, beautifulsoup4, selenium, requests, kafka-python
-- Các công cụ Big Data (tùy chọn): Hadoop, Spark, Kafka, Elasticsearch
+- Kafka bản 3.3.1
+- Hadoop 3.3.4
+- Spark 3.3.1
+- Elasticsearch 8.6.0
+- Apache Hive 3.1.3
+- Kibana 8.6.0
+- Flask
 
-## Cài đặt
+## Gợi ý cài đặt
 
-1. Clone repository:
+1. Cài đặt Apache Kafka
+Kafka là nền tảng xử lý dữ liệu theo luồng phân tán, được sử dụng để thu thập dữ liệu theo thời gian thực.
 ```bash
-git clone https://github.com/yourusername/shopee_recommendation_system.git
-cd shopee_recommendation_system
+# Cài đặt Java (yêu cầu cho Kafka)
+sudo apt update
+sudo apt install -y openjdk-11-jdk
+
+# Tải Kafka
+wget https://downloads.apache.org/kafka/3.3.1/kafka_2.13-3.3.1.tgz
+tar -xzf kafka_2.13-3.3.1.tgz
+cd kafka_2.13-3.3.1
+
+# Khởi động Zookeeper (yêu cầu cho Kafka) 
+bin/zookeeper-server-start.sh config/zookeeper.properties &
+
+# Khởi động Kafka server
+bin/kafka-server-start.sh config/server.properties &
+
+# Tạo topic cho dữ liệu Shopee
+bin/kafka-topics.sh --create --topic shopee-products --bootstrap-server localhost:9092
+bin/kafka-topics.sh --create --topic shopee-reviews --bootstrap-server localhost:9092
+bin/kafka-topics.sh --create --topic shopee-user-behaviors --bootstrap-server localhost:9092
 ```
 
-2. Cài đặt các thư viện cần thiết:
+2.Cài đặt Hadoop và HDFS
+Kafka là nền tảng xử lý dữ liệu theo luồng phân tán, được sử dụng để thu thập dữ liệu theo thời gian thực.
 ```bash
-pip install -r requirements.txt
+# Cài đặt SSH và các gói cần thiết
+sudo apt install -y ssh rsync
+
+# Tải Hadoop
+wget https://downloads.apache.org/hadoop/common/hadoop-3.3.4/hadoop-3.3.4.tar.gz
+tar -xzf hadoop-3.3.4.tar.gz
+cd hadoop-3.3.4
+
+# Cấu hình Hadoop
+# Chỉnh sửa các file cấu hình: core-site.xml, hdfs-site.xml, mapred-site.xml, yarn-site.xml
+
+# Định dạng HDFS
+bin/hdfs namenode -format
+
+# Khởi động HDFS
+sbin/start-dfs.sh
+
+# Tạo thư mục trên HDFS
+bin/hdfs dfs -mkdir -p /user/shopee/data
+bin/hdfs dfs -mkdir -p /user/shopee/products
+bin/hdfs dfs -mkdir -p /user/shopee/reviews
+bin/hdfs dfs -mkdir -p /user/shopee/user-behaviors
+```
+3. Cài đặt Apache Spark
+Spark được sử dụng để xử lý dữ liệu theo batch và real-time, cũng như cho các thuật toán gợi ý.
+```bash
+# Tải Spark
+wget https://downloads.apache.org/spark/spark-3.3.1/spark-3.3.1-bin-hadoop3.tgz
+tar -xzf spark-3.3.1-bin-hadoop3.tgz
+cd spark-3.3.1-bin-hadoop3
+
+# Khởi động Spark master
+sbin/start-master.sh
+
+# Khởi động Spark worker
+sbin/start-worker.sh spark://hostname:7077
+
+# Cài đặt PySpark
+pip install pyspark==3.3.1
+
+```
+4. Cài đặt Elasticsearch
+Elasticsearch được sử dụng để lưu trữ và tìm kiếm dữ liệu nhanh chóng.
+```bash
+# Cài đặt Elasticsearch
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-8.6.0-linux-x86_64.tar.gz
+tar -xzf elasticsearch-8.6.0-linux-x86_64.tar.gz
+cd elasticsearch-8.6.0
+
+# Khởi động Elasticsearch
+bin/elasticsearch
+
+# Tạo index cho dữ liệu Shopee
+curl -X PUT "localhost:9200/shopee-products" -H "Content-Type: application/json" -d'
+{
+  "settings": {
+    "number_of_shards": 3,
+    "number_of_replicas": 2
+  },
+  "mappings": {
+    "properties": {
+      "product_id": { "type": "keyword" },
+      "name": { "type": "text" },
+      "price_numeric": { "type": "float" },
+      "rating": { "type": "float" },
+      "category": { "type": "keyword" },
+      "brand": { "type": "keyword" },
+      "description": { "type": "text" }
+    }
+  }
+}'
+
 ```
 
-3. Cấu hình hệ thống:
-- Chỉnh sửa các tham số trong các file cấu hình (nếu cần)
-
-## Khởi động hệ thống
-
-Để khởi động toàn bộ hệ thống, sử dụng lệnh sau:
-
+5. Cài đặt Apache Hive
+Hive được sử dụng để truy vấn dữ liệu trên HDFS bằng SQL.
 ```bash
-python start_system.py
+# Tải Hive
+wget https://downloads.apache.org/hive/hive-3.1.3/apache-hive-3.1.3-bin.tar.gz
+tar -xzf apache-hive-3.1.3-bin.tar.gz
+cd apache-hive-3.1.3-bin
+
+# Cấu hình Hive
+# Chỉnh sửa hive-site.xml
+
+# Khởi tạo schema
+bin/schematool -dbType derby -initSchema
+
+# Khởi động Hive Metastore
+bin/hive --service metastore &
+
+# Khởi động HiveServer2
+bin/hiveserver2 &
+
+# Tạo bảng Hive
+bin/beeline -u jdbc:hive2://localhost:10000
+CREATE DATABASE shopee;
+USE shopee;
+CREATE TABLE products (
+  product_id STRING,
+  name STRING,
+  price_numeric FLOAT,
+  rating FLOAT,
+  category STRING,
+  brand STRING,
+  description STRING
+)  STORED AS PARQUET;
+
 ```
-
-Các tùy chọn:
-- `--host`: Host để chạy web interface (mặc định: 0.0.0.0)
-- `--port`: Port để chạy web interface (mặc định: 5000)
-- `--debug`: Chạy web interface trong chế độ debug
-- `--threaded`: Chạy web interface trong chế độ threaded
-- `--processes`: Số lượng process cho web interface (mặc định: 1)
-
-Ví dụ:
+6. Cài đặt Kibana (cho trực quan hóa dữ liệu)
 ```bash
-python start_system.py --port 8080 --threaded
+# Tải Kibana
+wget https://artifacts.elastic.co/downloads/kibana/kibana-8.6.0-linux-x86_64.tar.gz
+tar -xzf kibana-8.6.0-linux-x86_64.tar.gz
+cd kibana-8.6.0-linux-x86_64
+
+# Khởi động Kibana
+bin/kibana
+
 ```
-
-## Sử dụng hệ thống
-
-### Thu thập dữ liệu
-
-Để thu thập dữ liệu từ Shopee, sử dụng lệnh sau:
-
+7. Cài đặt Flask (cho giao diện web)
 ```bash
-python data_collection/shopee_scraper.py
+# Cài đặt Flask và các thư viện cần thiết
+pip install flask flask-cors requests pandas numpy scikit-learn
+
 ```
-
-Các tùy chọn:
-- `--category`: Danh mục sản phẩm cần thu thập
-- `--limit`: Số lượng sản phẩm tối đa cần thu thập
-- `--output`: Đường dẫn đến file đầu ra
-
-### Xử lý dữ liệu
-
-Để xử lý dữ liệu theo batch, sử dụng lệnh sau:
-
-```bash
-python data_processing/batch_processing.py
-```
-
-Để xử lý dữ liệu theo thời gian thực, sử dụng lệnh sau:
-
-```bash
-python data_processing/spark_streaming.py
-```
-
-### Gợi ý sản phẩm
-
-Để tạo gợi ý sản phẩm, sử dụng lệnh sau:
-
-```bash
-python recommendation_algorithms/hybrid_methods.py
-```
-
-### Truy vấn dữ liệu
-
-Để truy vấn dữ liệu, sử dụng lệnh sau:
-
-```bash
-python query_system/serving_layer.py
-```
-
-### Giao diện web
-
-Để chạy giao diện web, sử dụng lệnh sau:
-
-```bash
-python web_interface/app.py
-```
-
-Sau đó, truy cập vào địa chỉ http://localhost:5000 để sử dụng giao diện web.
-
-## Kiểm thử hệ thống
-
-Để kiểm thử hệ thống, sử dụng lệnh sau:
-
-```bash
-python test_system.py
-```
-
-## Tối ưu hóa hệ thống
-
-Để tối ưu hóa hệ thống, sử dụng lệnh sau:
-
-```bash
-python optimize_system.py
-```
-
-## Các trang trong giao diện web
-
-### Trang chủ
-
-Trang chủ hiển thị các sản phẩm phổ biến và danh mục sản phẩm. Người dùng có thể xem các sản phẩm nổi bật và chuyển đến các trang khác.
-
-### Trang sản phẩm
-
-Trang sản phẩm hiển thị danh sách các sản phẩm với các bộ lọc như danh mục, giá, đánh giá và sắp xếp. Người dùng có thể lọc và tìm kiếm sản phẩm theo nhu cầu.
-
-### Trang chi tiết sản phẩm
-
-Trang chi tiết sản phẩm hiển thị thông tin chi tiết về một sản phẩm, bao gồm mô tả, giá, đánh giá và phản hồi từ người dùng. Người dùng cũng có thể xem các sản phẩm tương tự.
-
-### Trang gợi ý sản phẩm
-
-Trang gợi ý sản phẩm hiển thị các sản phẩm được gợi ý cho người dùng dựa trên hành vi mua sắm và lịch sử tương tác. Người dùng có thể xem phân tích hành vi của mình.
-
-### Trang so sánh thuật toán
-
-Trang so sánh thuật toán hiển thị hiệu suất của các thuật toán gợi ý khác nhau cho người dùng. Người dùng có thể so sánh các thuật toán và xem chi tiết theo sản phẩm.
-
-### Trang bảng điều khiển
-
-Trang bảng điều khiển hiển thị các biểu đồ và thống kê về dữ liệu sản phẩm, đánh giá và hành vi người dùng. Người dùng có thể xem phân tích tổng quan về hệ thống.
-
-## API
-
-Hệ thống cung cấp các API sau:
-
-### API sản phẩm
-
-- `GET /api/products/top`: Lấy danh sách sản phẩm hàng đầu
-- `GET /api/products/<product_id>`: Lấy thông tin chi tiết sản phẩm
-
-### API gợi ý
-
-- `GET /api/recommendations/<user_id>`: Lấy gợi ý sản phẩm cho người dùng
-- `GET /api/algorithms/comparison/<user_id>`: So sánh các thuật toán gợi ý cho người dùng
-
-### API danh mục
-
-- `GET /api/categories`: Lấy danh sách danh mục sản phẩm
-
-### API người dùng
-
-- `GET /api/user/behavior/<user_id>`: Lấy phân tích hành vi người dùng
+8. Kết nối các thành phần
+Đảm bảo các thành phần kết nối được với nhau(Nên dùng Docker)
+8.1. Kết nối Kafka với Spark Streaming
+   file kafka_to_spark.py
+8.2. Kết nối Spark với Elasticsearch
+   file spark_to_elasticsearch.py
+8.3. Triển khai thuật toán gợi ý với Spark MLlib
+   file recommendation_engine.py
+8.4. Xây dựng giao diện web với Flask
+   file app.py
+9. Tạo script khởi động hệ thống
+    file start_system.sh
+10. Tạo script thu thập dữ liệu
+    file collect_data.py
+11. Tạo script phân tích dữ liệu
+    file analyze_data.py
+12. Tạo script đánh giá thuật toán gợi ý
+    file evaluate_recommendations.py
