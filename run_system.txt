@@ -1,0 +1,37 @@
+docker-compose up -d --build
+
+Chạy Spark Job 1: Index Dữ liệu Sản phẩm Gốc:
+
+# Chạy từ máy host, trong thư mục ~/docker-hadoop
+# Script này sẽ đọc /data/Amazon_products.json và ghi vào ES index "amazon_products_index"
+docker exec -it spark-master spark-submit \
+  --master local[*] \
+  /data/index_ex_spark.py 
+  # Không cần --packages vì JAR đã được mount vào /opt/bitnami/spark/jars
+
+Chạy Spark Job 2: Tạo và Lưu Gợi ý:
+
+# Chạy từ máy host, trong thư mục ~/docker-hadoop
+# Script này đọc /data/Amazon_products.json, tính toán gợi ý, và ghi vào ES index "amazon_product_recommendations"
+docker exec -it spark-master spark-submit \
+  --master local[*] \
+  /data/generate_recommendations.py
+  # Không cần --packages
+
+Kiểm tra Backend API:
+
+Dùng trình duyệt hoặc curl để thử các endpoint của app.py:
+http://localhost:5000/ (trang chủ backend)
+http://localhost:5000/products?limit=5
+http://localhost:5000/search?keyword=Laptop (thay "Laptop" bằng từ khóa bạn muốn)
+http://localhost:5000/recommend/<một_ASIN_sản_phẩm_bất_kỳ> (thay <một_ASIN_sản_phẩm_bất_kỳ> bằng một asin có trong dữ liệu của bạn).
+Kiểm tra Frontend:
+
+Mở trình duyệt và truy cập http://localhost:3000.
+Thử các chức năng: xem sản phẩm ban đầu, tìm kiếm, click vào một sản phẩm để xem gợi ý.
+Kiểm tra Developer Console của trình duyệt (thường là F12) để xem có lỗi JavaScript nào không.
+Sử dụng Kibana:
+
+Truy cập http://localhost:5601.
+Tạo Index Patterns cho amazon_products_index và amazon_product_recommendations.
+Khám phá dữ liệu và tạo các dashboard trực quan hóa.  

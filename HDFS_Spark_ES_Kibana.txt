@@ -1,0 +1,276 @@
+version: "3"
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: namenode
+    restart: always
+    ports:
+      - 9870:9870 # Web UI
+      - 9000:9000 # HDFS port
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    environment:
+      - CLUSTER_NAME=test
+    env_file:
+      - ./hadoop.env
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:9870"]
+        interval: 30s
+        timeout: 10s
+        retries: 3  
+
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode1
+    restart: always
+    ports:
+      - 9864:9864 # Web UI
+    volumes:
+      - hadoop_datanode1:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000"
+    env_file:
+      - ./hadoop.env
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: datanode2
+    restart: always
+    ports:
+      - 9866:9866 # Web UI
+    volumes:
+      - hadoop_datanode2:/hadoop/dfs/data
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000"
+    env_file:
+      - ./hadoop.env
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: resourcemanager
+    restart: always
+    ports:
+      - 8088:8088
+      - 8090:8090
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9866"
+    env_file:
+      - ./hadoop.env
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: nodemanager1
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
+    env_file:
+      - ./hadoop.env
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: historyserver
+    restart: always
+    environment:
+      SERVICE_PRECONDITION: "namenode:9000 namenode:9870 datanode1:9864 datanode2:9864 resourcemanager:8088"
+    volumes:
+      - hadoop_historyserver:/hadoop/yarn/timeline
+    env_file:
+      - ./hadoop.env
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    container_name: elasticsearch
+    restart: always
+    ports:
+      - "9200:9200" # HTTP
+      - "9300:9300" # Transport
+    environment:
+      - cluster.name=docker-cluster-es-spark
+      - node.name=es_node_1
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms256m -Xmx512m"
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "node.store.allow_mmap:false"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536  
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s  
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.13.4
+    container_name: kibana
+    restart: always
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - "5601:5601" # Kibana UI
+    depends_on:
+      elasticsearch:
+           condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s -f http://localhost:5601/api/status || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s        
+    
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    container_name: zookeeper
+    restart: always
+    environment:
+      - ZOO_ENABLE_AUTH=no
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    ports:
+      - "2181:2181"
+
+  kafka:
+    image: bitnami/kafka:3.4
+    container_name: kafka
+    restart: always
+    ports:
+      - "9092:9092"
+    environment:
+      # Địa chỉ Zookeeper
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      # Hostname Kafka hiển thị ra bên ngoài
+      - KAFKA_LISTENERS:INTERNAL://0.0.0.0:9093,EXTERNAL://0.0.0.0:9092 # Listener nội bộ dùng port khác
+      - KAFKA_ADVERTISED_LISTENERS:INTERNAL://kafka:9093,EXTERNAL://localhost:9092 # Nội bộ dùng tên service, bên ngoài dùng localhost
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_INTER_BROKER_LISTENER_NAME:INTERNAL # Các broker nói chuyện qua listener nội bộ
+      # Cho phép anonymous login
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper      
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_hive
+    restart: always
+    healthcheck:
+      # Sử dụng CMD-SHELL để có thể dùng biến môi trường
+      # Lệnh: chạy mysqladmin ping, kết nối localhost, dùng user root (-u root có thể bỏ qua vì thường là mặc định)
+      #        và lấy mật khẩu từ biến môi trường MYSQL_ROOT_PASSWORD (-p$$MYSQL_ROOT_PASSWORD)
+      #        Nếu lệnh mysqladmin thất bại (trả mã khác 0), thì || exit 1 sẽ làm healthcheck thất bại.
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD || exit 1"]
+      interval: 1m30s      # Thời gian chờ giữa các lần kiểm tra
+      timeout: 30s         # Thời gian tối đa chờ lệnh test hoàn thành
+      retries: 5           # Số lần thử lại nếu thất bại trước khi đánh dấu là unhealthy
+      start_period: 30s    # Thời gian chờ ban đầu sau khi container khởi động trước khi bắt đầu healthcheck (cho phép MySQL có thời gian khởi tạo)
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: mysql_db_hive
+      MYSQL_USER: hive_user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_hive_data:/var/lib/mysql   
+  
+  hive-server: # Đổi tên service cho rõ ràng hơn (tùy chọn)
+    image: apache/hive:3.1.3
+    container_name: hive-server # Đổi tên container cho khớp (tùy chọn)
+    restart: always
+    ports:
+      - "10000:10000" # Cổng cho HiveServer2 (JDBC/ODBC connections)
+      # Cổng 10002 thường cho Metastore Thrift, nếu chạy riêng.
+      # Nếu HS2 kết nối trực tiếp DB qua JDBC thì không cần expose cổng này.
+    environment:
+      # Chỉ định vai trò của container này là HiveServer2
+      SERVICE_NAME: hiveserver2
+      # Chỉ định nơi Hive có thể tìm thấy cấu hình Hadoop
+      HADOOP_CONF_DIR: /opt/hive/conf/hadoop
+      # (Tùy chọn) Có thể thêm các biến môi trường khác nếu image hỗ trợ
+      # Ví dụ: IS_RESUME=true (đôi khi cần thiết cho image này)
+    depends_on:
+      # Phụ thuộc vào MySQL và các thành phần Hadoop cần thiết
+      - mysql # Đảm bảo tên service MySQL đúng
+      - namenode
+      - datanode1
+      - datanode2
+      # - resourcemanager # Thêm nếu Hive cần chạy job trên YARN
+    volumes:
+      # Mount file hive-site.xml tùy chỉnh của bạn
+      - ./hive/conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      # Mount thư mục chứa cấu hình Hadoop (core-site.xml, hdfs-site.xml)
+      # Đảm bảo thư mục này giống với thư mục bạn mount cho Spark
+      - ./spark/conf:/opt/hive/conf/hadoop
+      # Mount MySQL JDBC Driver (quan trọng!)
+      # Đảm bảo bạn đã tải và đặt file JAR đúng vào thư mục ./drivers trên host
+      - ./drivers/mysql-connector-j-8.0.33/mysql-connector-j-8.0.33.jar:/opt/hive/lib/mysql-connector-j.jar 
+
+  spark-master:
+    image: bitnami/spark:3.5.1
+    container_name: spark-master
+    restart: always
+    ports:
+      - "8080:8080" # Web UI
+      - "7077:7077" # Port cho Spark Master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      # Chỉ định nơi Spark tìm cấu hình Hadoop để kết nối HDFS
+      - HADOOP_CONF_DIR=/opt/bitnami/spark/conf/hadoop
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+    depends_on:
+      # Spark cần HDFS chạy trước
+      - namenode
+      - datanode1
+      - datanode2  
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s 
+    volumes:
+      # Mount thư mục chứa cấu hình Hadoop (core-site.xml, hdfs-site.xml)
+      - ./spark/conf:/opt/bitnami/spark/conf/hadoop
+      # (Tùy chọn) Mount thư mục dữ liệu/apps nếu cần
+      - ./spark_data:/data
+      - ./spark-jars:/opt/bitnami/spark/jars
+      
+  spark-worker:
+    image: bitnami/spark:3.5.1
+    container_name: spark-worker
+    restart: always
+    ports:
+      - "8081:8081" # Web UI
+      - "7078:7078" # Port cho Spark Worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077 # Kết nối đến Master
+      - SPARK_WORKER_WEBUI_PORT=8081
+      # Chỉ định nơi Spark tìm cấu hình Hadoop để kết nối HDFS
+      - HADOOP_CONF_DIR=/opt/bitnami/spark/conf/hadoop
+      # !! Giới hạn tài nguyên cho worker trên máy 8GB !!
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1g
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+    depends_on:
+      - spark-master
+    volumes:
+      # Mount thư mục cấu hình Hadoop
+      - ./spark/conf:/opt/bitnami/spark/conf/hadoop
+      # (Tùy chọn) Mount thư mục dữ liệu/apps nếu cần
+      - ./spark_data:/data  
+volumes:
+  hadoop_namenode:
+  hadoop_datanode1:
+  hadoop_datanode2: 
+  hadoop_historyserver:
+  mysql_hive_data:  
+  esdata:

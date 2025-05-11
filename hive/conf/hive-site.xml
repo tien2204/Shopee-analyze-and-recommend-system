@@ -1,0 +1,31 @@
+<configuration>
+  <property>
+    <name>javax.jdo.option.ConnectionURL</name>
+    <value>jdbc:mysql://mysql:3306/mysql_db_hive?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionDriverName</name>
+    <value>com.mysql.cj.jdbc.Driver</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionUserName</name>
+    <value>hive_user</value>
+  </property>
+  <property>
+    <name>javax.jdo.option.ConnectionPassword</name>
+    <value>password</value>
+  </property>
+  <!-- Warehouse dir on HDFS -->
+  <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>hdfs://namenode:9000/user/hive/warehouse</value>
+  </property>
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:9000</value>
+  </property>
+    <property>
+    <name>datanucleus.schema.autoCreateTables</name>
+    <value>true</value>
+  </property>
+</configuration>
