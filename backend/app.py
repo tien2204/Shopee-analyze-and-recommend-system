@@ -1,9 +1,11 @@
 # Trong backend/app.py
 from flask import Flask, jsonify, request # Thêm request
 from elasticsearch import Elasticsearch
+from flask_cors import CORS
 import os
 
 app = Flask(__name__)
+CORS(app) # Cho phép CORS cho tất cả các domain (có thể giới hạn nếu cần)
 es_host = os.environ.get("ELASTICSEARCH_HOST", "http://elasticsearch:9200")
 es = Elasticsearch(es_host)
 
