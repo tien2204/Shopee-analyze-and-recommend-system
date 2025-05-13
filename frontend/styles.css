@@ -197,43 +197,40 @@ img#mainProductImage {
   color: #666;
   padding: 20px;
 }
+/* CSS cho pagination */
+.pagination-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap; /* Cho phép wrap trên màn hình nhỏ */
+}
 
-/* Style cho phan trang */
+.pagination-button {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  color: #337ab7;
+  padding: 8px 12px;
+  margin: 0 3px;
+  text-decoration: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.3s, color 0.3s;
+}
 
-    .pagination-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-top: 20px;
-      flex-wrap: wrap; /* Cho phép wrap trên màn hình nhỏ */
-    }
+.pagination-button:hover {
+  background-color: #e9e9e9;
+}
 
-    .pagination-button {
-      background-color: #f0f0f0;
-      border: 1px solid #ddd;
-      color: #337ab7;
-      padding: 8px 12px;
-      margin: 0 3px;
-      text-decoration: none;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: background-color 0.3s, color 0.3s;
-    }
+.pagination-button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+  font-weight: bold;
+  text-decoration: underline; /* Gạch chân trang hiện tại */
+}
 
-    .pagination-button:hover {
-      background-color: #e9e9e9;
-    }
-
-    .pagination-button.active {
-      background-color: #007bff;
-      color: white;
-      border-color: #007bff;
-      font-weight: bold;
-      text-decoration: underline; /* Gạch chân trang hiện tại */
-    }
-
-    .pagination-ellipsis {
-      padding: 8px 5px;
-      color: #777;
-    }
-    
+.pagination-ellipsis {
+  padding: 8px 5px;
+  color: #777;
+}
