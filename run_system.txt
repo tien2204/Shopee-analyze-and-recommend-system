@@ -4,18 +4,14 @@ Chạy Spark Job 1: Index Dữ liệu Sản phẩm Gốc:
 
 # Chạy từ máy host, trong thư mục ~/docker-hadoop
 # Script này sẽ đọc /data/Amazon_products.json và ghi vào ES index "amazon_products_index"
-docker exec -it spark-master spark-submit \
-  --master local[*] \
-  /data/index_ex_spark.py 
+ docker exec -it spark-master spark-submit   --master local[*]   --conf spark.driver.userClassPathFirst=true   --conf spark.executor.userClassPathFirst=true   /data/index_es_spark.py 
   # Không cần --packages vì JAR đã được mount vào /opt/bitnami/spark/jars
 
 Chạy Spark Job 2: Tạo và Lưu Gợi ý:
 
 # Chạy từ máy host, trong thư mục ~/docker-hadoop
 # Script này đọc /data/Amazon_products.json, tính toán gợi ý, và ghi vào ES index "amazon_product_recommendations"
-docker exec -it spark-master spark-submit \
-  --master local[*] \
-  /data/generate_recommendations.py
+ docker exec -it spark-master spark-submit   --master local[*]   --conf spark.driver.userClassPathFirst=true   --conf spark.executor.userClassPathFirst=true   /data/generate_recommendations.py
   # Không cần --packages
 
 Kiểm tra Backend API:

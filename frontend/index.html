@@ -5,26 +5,46 @@
   <title>Product Search & Recommend</title>
   <link href="styles.css" rel="stylesheet">
 </head>
-<body class="p-8 font-sans">
-  <header class="mb-8">
-    <h1 class="text-3xl font-bold mb-4 text-center">🔎 Product Search & Recommendation</h1>
-    <div class="flex justify-center">
-      <input id="keyword" type="text" placeholder="Enter product name..." class="border p-2 rounded-l-md w-1/3">
-      <button onclick="searchProductsAPI()" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-r-md">Search</button>
+<body>
+  <header class="site-header">
+    <h1>🔎 Product Search & Recommendation</h1>
+    <div class="search-bar">
+      <input id="keyword" type="text" placeholder="Enter product name...">
+      <button onclick="searchProductsAPI()">Search</button>
     </div>
   </header>
 
-  <main>
-    <section class="mb-10">
-      <h2 class="text-2xl font-semibold mb-3" id="productListTitle">Products:</h2>
-      <div id="productListContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-        <p class="col-span-full text-center text-gray-500">Loading initial products...</p>
+  <main class="container">
+    <section id="mainProductSection" style="display:none;">
+      <h2>Selected Product:</h2>
+      <div id="mainProductView" class="main-product-view-layout">
+        <div class="main-product-image-wrapper">
+          <img id="mainProductImage" src="" alt="Main product image">
+        </div>
+        <div class="main-product-info">
+          <h3 id="mainProductTitle"></h3>
+          <p id="mainProductPrice"></p>
+          <p id="mainProductASIN" class="asin-text"></p>
+          <div class="description-container">
+            <strong>Description:</strong>
+            <p id="mainProductDescription">N/A</p>
+          </div>
+        </div>
       </div>
     </section>
 
-    <section>
-      <h2 class="text-2xl font-semibold mb-3" id="recommendationsTitle" style="display:none;">Similar Products:</h2>
-      <div id="recommendationsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+    <section class="product-list-section">
+      <h2 id="productListTitle">Featured Products:</h2>
+      <div id="productListContainer" class="product-list-grid">
+        <p class="loading-message">Loading initial products...</p>
+      </div>
+      <div id="paginationControls" class="pagination-controls">
+        </div>
+    </section>
+
+    <section class="recommendation-section">
+      <h2 id="recommendationsTitle" style="display:none;">Similar Products:</h2>
+      <div id="recommendationsContainer" class="product-list-grid">
         </div>
     </section>
   </main>

@@ -27,10 +27,6 @@ spark = SparkSession.builder \
 print("Spark Session Created")
 
 # === Tải Model Embedding ===
-# Tải model Sentence Transformer (sẽ tải về lần đầu chạy)
-# Bạn có thể chọn các model khác phù hợp hơn với tiếng Việt nếu cần
-# ví dụ: 'bkai-foundation-models/vietnamese-bi-encoder'
-# hoặc một model đa ngôn ngữ: 'all-MiniLM-L6-v2'
 print("Loading Sentence Transformer model...")
 model_name = 'all-MiniLM-L6-v2'
 # Sử dụng broadcast để gửi model đã load đến tất cả các worker một cách hiệu quả
@@ -65,7 +61,7 @@ try:
     products_df.printSchema()
     products_df.show(2, truncate=False, vertical=True)
     # Đảm bảo có ít nhất các cột cần thiết
-    required_cols = ["asin", "description", "categories", "final_price"]
+    required_cols = ["asin", "title", "description", "categories", "final_price"]
     if not all(c in products_df.columns for c in required_cols):
         print(f"Lỗi: Thiếu cột cần thiết. Cần có: {required_cols}")
         spark.stop()
@@ -130,7 +126,7 @@ print("LSH model fitted.")
 #    Ngưỡng càng nhỏ, các cặp tìm được càng giống nhau (similarity cao)
 #    Đặt ngưỡng hợp lý (ví dụ: 0.9 tương đương similarity > 0.1, 0.5 tương đương similarity > 0.5)
 #    Lưu ý: distCol ở đây là Cosine Distance (0 = giống hệt, 2 = khác biệt hoàn toàn)
-similarity_threshold = 0.8 # Tìm các cặp có cosine distance < 0.8 (tức cosine similarity > 0.2)
+similarity_threshold = 1.0 # Tìm các cặp có cosine distance < 0.8 (tức cosine similarity > 0.2)
 print(f"Finding approximate similar pairs with distance threshold < {similarity_threshold}...")
 approx_similar_pairs = lsh_model.approxSimilarityJoin(
     df_with_vectors, df_with_vectors, threshold=similarity_threshold, distCol="cosine_distance"
@@ -222,8 +218,8 @@ all_product_details_df = products_df.select(
     col("asin").alias("detail_asin"), # Đặt tên alias rõ ràng
     col("image_url").alias("detail_image_url"),
     col("title").alias("detail_title"), # Lấy thêm title để đảm bảo có thể dùng cho p2_title
-    col("final_price").alias("detail_final_price") # Lấy thêm final_price để dùng cho p2_price
-    # Bạn có thể lấy thêm các trường khác của sản phẩm nếu cần
+    col("final_price").alias("detail_final_price"), # Lấy thêm final_price để dùng cho p2_price
+    coalesce(col("description"), col("top_review"), col("title"), lit("")).alias("detail_description")
 ).distinct() # distinct() để đảm bảo mỗi asin chỉ có một dòng chi tiết
 
 # 2. Join top_n_filtered (kết quả sau khi lọc category, đã alias là "rec")
@@ -240,7 +236,8 @@ recommendations_with_full_details = top_n_filtered.alias("rec") \
         col("rec.p2_asin"),  # ID sản phẩm được gợi ý
         col("p2_info.detail_title").alias("p2_title"),    # Lấy title của sản phẩm gợi ý từ join
         col("p2_info.detail_final_price").alias("p2_price"),# Lấy price của sản phẩm gợi ý từ join
-        col("p2_info.detail_image_url").alias("p2_image_url"),# Lấy image_url của sản phẩm gợi ý
+        col("p2_info.detail_image_url").alias("p2_image_url"),
+        col("p2_info.detail_description").alias("p2_description"),
         col("rec.similarity")
         # Các cột p2_categories, rank từ 'rec' có thể giữ lại nếu cần cho các bước sau nữa
         # Hoặc nếu đã có p2_title, p2_price từ top_n_similar rồi thì không cần join để lấy lại nữa,
@@ -259,6 +256,7 @@ final_recommendations_sorted = recommendations_with_full_details \
         col("p2_title").alias("name"), # Đây là title của sản phẩm được gợi ý
         col("p2_price").alias("price"),   # Đây là final_price của sản phẩm được gợi ý
         col("p2_image_url").alias("image_url"),
+        col("p2_description").alias("description"),
         col("similarity")
         )).alias("recommendations")
     )
@@ -266,14 +264,33 @@ final_recommendations_sorted = recommendations_with_full_details \
 print("Final recommendations sorted by price:")
 final_recommendations_sorted.show(truncate=False)
 
+# 1. Lấy danh sách tất cả các ASIN gốc từ products_df
+all_source_asins_df = products_df.select(col("asin").alias("p1_asin")).distinct()
+
+# 2. Left join all_source_asins_df với final_recommendations_sorted
+#    để đảm bảo mọi sản phẩm gốc đều có một dòng, kể cả khi không có gợi ý nào được tạo ra.
+recommendations_for_all_products = all_source_asins_df.alias("all_prods") \
+    .join(
+        final_recommendations_sorted.alias("recs"),
+        col("all_prods.p1_asin") == col("recs.p1_asin"),
+        "left_outer" # Quan trọng: giữ lại tất cả sản phẩm gốc
+    ) \
+    .select(
+        col("all_prods.p1_asin").alias("source_asin"),
+        # Nếu không có gợi ý (recs.recommendations is null), tạo một mảng rỗng
+        coalesce(col("recs.recommendations"), lit(None).cast(ArrayType(final_recommendations_sorted.schema["recommendations"].dataType.elementType))).alias("recommendations_raw")
+        # Hoặc đơn giản hơn nếu không cần kiểu chính xác:
+        # coalesce(col("recs.recommendations"), expr("array()")).alias("recommendations_raw")
+    )
 
 # === (BẮT BUỘC) Ghi kết quả vào Elasticsearch ===
 # (Phần này giữ nguyên như bạn đã có, chỉ cần đảm bảo input DataFrame là final_recommendations_sorted)
 print("Saving final recommendations to Elasticsearch...")
-output_df_for_es = final_recommendations_sorted.select(
-      col("p1_asin").alias("source_asin"), # Dùng p1_asin làm ID nguồn
-      col("recommendations")
+output_df_for_es = recommendations_for_all_products.select(
+    col("source_asin"),
+    col("recommendations_raw").alias("recommendations") # Đổi tên lại
 )
+
 try:
     output_df_for_es.write \
       .format("org.elasticsearch.spark.sql") \
